@@ -13,9 +13,9 @@
 > 否则不建议您使用本模块
 
 
-akashaProxy 是 ~~mihomo~~clashMeta 衍生的Magisk/KernelSU模块
+akashaProxy 是 mihomo 衍生的Magisk/KernelSU模块
 
-名字来源于[clashMeta文档](https://wiki.metacubex.one)的虚空终端修改而来
+名字来源于[mihomo文档](https://wiki.metacubex.one)的虚空终端修改而来
 
 ~~中文名应该叫`虚空代理`~~
 

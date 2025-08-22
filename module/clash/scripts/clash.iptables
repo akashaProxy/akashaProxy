@@ -426,7 +426,7 @@ while getopts ":sk" signal ; do
                             log "warn: tun的auto-route参数未启用将由模块创建路由."
                             log "warn: 仅支持全局代理."
                             log "warn: 你也可以修改启动配置auto_config为true."
-                            log "warn: 此时模块将自动修改clashMeta的tun自动路由."
+                            log "warn: 此时模块将自动修改mihomo的tun自动路由."
                         fi
                     else
                         log "info: 当前为:tproxy模式."

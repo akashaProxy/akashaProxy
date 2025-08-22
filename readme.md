@@ -13,9 +13,9 @@ English | [中文](./readme_zh.md)
 
 >Otherwise, we do not recommend using this module
 
-akashaProxy is a Magisk/KernelSU module derived from ~~mihomo~~clashMeta
+akashaProxy is a Magisk/KernelSU module derived from mihomo
 
-The name is modified from the void terminal of [clashMeta document](https://wiki.metacubex.one)
+The name is modified from the void terminal of [mihomo document](https://wiki.metacubex.one)
 
 ~~The Chinese name should be called `Void Agent`~~
 

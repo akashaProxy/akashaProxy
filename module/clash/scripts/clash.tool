@@ -290,7 +290,7 @@ update_pre() {
             update_file ${GeoSite_url} ${Clash_GeoSite_file}
         fi
     fi
-    if [ "${auto_updateclashMeta}" = "true" ] || [ ! -f "${Clash_bin_path}" ]; then
+    if [ "${auto_updateMihomo}" = "true" ] || [ ! -f "${Clash_bin_path}" ]; then
         check_clash_ver
         flag=true
     fi

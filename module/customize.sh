@@ -28,17 +28,33 @@ fi
 system_gid="1000"
 system_uid="1000"
 clash_data_dir="/data/clash"
-ABI=$(getprop ro.product.cpu.abi)
+case $(getprop ro.product.cpu.abi) in
+    "arm64-v8a")
+        ABI="arm64-v8"
+        ;;
+    "armeabi-v7a")
+        ABI="armv7"
+        ;;
+    "x86")
+        ABI="386"
+        ;;
+    "x86_64")
+        ABI="amd64"
+        ;;
+    "")
+        ABI="unknown"
+        ;;
+esac
 mkdir -p ${clash_data_dir}/run
 mkdir -p ${clash_data_dir}/clashkernel
 
-[ -f ${clash_data_dir}/clashkernel/ClashMeta ] && rm -rf ${clash_data_dir}/clashkernel/ClashMeta
+[ -f ${clash_data_dir}/clashkernel/clashMeta ] && mv ${clash_data_dir}/clashkernel/clashMeta ${clash_data_dir}/clashkernel/mihomo
 if [ ! -f ${clash_data_dir}/clashkernel/mihomo ];then
     unzip -o "$ZIPFILE" 'bin/*' -d "$TMPDIR" >&2
-    if [ -f "${MODPATH}/bin/clashMeta-android-${ABI}.gz" ];then
-        ui_print "- 正在解压 clashMeta 内核..."
-        gunzip -f ${MODPATH}/bin/clashMeta-android-${ABI}.gz
-        mv -f ${MODPATH}/bin/clashMeta-android-${ABI} ${clash_data_dir}/clashkernel/mihomo
+    if [ -f "${MODPATH}/bin/mihomo-android-${ABI}.gz" ];then
+        ui_print "- 正在解压 mihomo 内核..."
+        gunzip -f ${MODPATH}/bin/mihomo-android-${ABI}.gz
+        mv -f ${MODPATH}/bin/mihomo-android-${ABI} ${clash_data_dir}/clashkernel/mihomo
     else
         abort "未找到架构: ${ABI} 请自行前往 GitHub 项目地址下载 → https://github.com/MetaCubeX/mihomo/releases"
     fi
@@ -60,7 +76,7 @@ if [ -f "${clash_data_dir}/clash.config" ];then
     mode=$(grep -i "^mode" ${clash_data_dir}/clash.config | awk -F '=' '{print $2}' | sed "s/\"//g")
     oldVersion=$(grep -i "version" ${clash_data_dir}/clash.config | awk -F '=' '{print $2}' | sed "s/\"//g")
     newVersion=$(grep -i "version" ${MODPATH}/clash/clash.config | awk -F '=' '{print $2}' | sed "s/\"//g")
-    if [ "${oldVersion}" < "${newVersion}" ] && [ ! "${oldVersion}" == "" ];then
+    if [[ "${oldVersion}" >= "${newVersion}" ]] && [ ! "${oldVersion}" == "" ];then
         ui_print "- clash.config 文件已存在 跳过覆盖."
         rm -rf ${MODPATH}/clash/clash.config
     else
@@ -89,7 +105,7 @@ set_perm_recursive ${clash_data_dir}/tools ${system_uid} ${system_gid} 0770 0770
 set_perm_recursive ${clash_data_dir}/clashkernel ${system_uid} ${system_gid} 6770 6770
 set_perm  ${clash_data_dir}/mosdns/mosdns  ${system_uid}  ${system_gid}  6770
 set_perm  ${clash_data_dir}/adguard/AdGuardHome  ${system_uid}  ${system_gid}  6770
-set_perm  ${clash_data_dir}/clashkernel/clashMeta  ${system_uid}  ${system_gid}  6770
+set_perm  ${clash_data_dir}/clashkernel/mihomo  ${system_uid}  ${system_gid}  6770
 set_perm  ${clash_data_dir}/clash.config ${system_uid} ${system_gid} 0770
 set_perm  ${clash_data_dir}/packages.list ${system_uid} ${system_gid} 0770
 

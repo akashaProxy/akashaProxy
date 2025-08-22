@@ -163,11 +163,11 @@ start_clash() {
             echo "${update_subcriptInterval} ${scripts_dir}/clash.tool -s" >> ${Clash_run_path}/root \
             && log "info: 自动更新订阅定时已开启."
         fi
-        if [ "${auto_updateclashMeta}" = "true" ] || [ "${Geo_auto_update}" != "true" ]; then
+        if [ "${auto_updateMihomo}" = "true" ] || [ "${Geo_auto_update}" != "true" ]; then
             echo "${update_geoXInterval} ${scripts_dir}/clash.tool -u" >> ${Clash_run_path}/root \
-            && log "info: 自动更新clashMeta内核定时已开启."
+            && log "info: 自动更新mihomo内核定时已开启."
         else
-            log "info: 自动更新clashMeta内核定时已开启."
+            log "info: 自动更新mihomo内核定时已开启."
         fi
 
         sed -i '/^[  ]*$/d' ${CFM_logs_file}
@@ -176,14 +176,9 @@ start_clash() {
             echo "*/1 * * * * ${com}" >> ${Clash_run_path}/root && log "info: 自动绕过本地ip段已打开."
         fi
     else
-        if [ ${Clash_bin_name} = "clashMeta" ];then
-            log "err: ${Clash_bin_name}内核丢失 正在更新..."
-            ${scripts_dir}/clash.tool -u
-            start_clash
-        else
-            log "err: ${Clash_bin_name}内核丢失."
-        fi
-        exit 1
+        log "err: ${Clash_bin_name}内核丢失 正在更新..."
+        ${scripts_dir}/clash.tool -u
+        start_clash
     fi
     
     if [ ${ml} = "true" ];then

@@ -3,8 +3,18 @@ name: ci
 on:
   push:
     branches: [ "master" ]
+    paths: 
+      - "Makefile"
+      - "module/**"
+      - "webui/**"
+      - "yamlcli/**"
   pull_request:
     branches: [ "master" ]
+    paths: 
+      - "Makefile"
+      - "module/**"
+      - "webui/**"
+      - "yamlcli/**"
   workflow_dispatch:
 
 permissions:

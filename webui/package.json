@@ -15,7 +15,7 @@
     "@mui/lab": "7.0.1-beta.20",
     "@mui/material": "^7.3.6",
     "js-yaml": "^4.1.1",
-    "kernelsu": "^2.1.1",
+    "kernelsu": "^3.0.0",
     "next": "^16.1.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"

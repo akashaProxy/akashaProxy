@@ -22,10 +22,13 @@ jobs:
         sudo timedatectl set-timezone "Asia/Shanghai"
         [ ! -f module/bin ] && mkdir module/bin
         text="${{ github.event.head_commit.message }}"
-        build_sha="$(git rev-parse --short HEAD)"
+        build_sha="$(git rev-parse --short=7 HEAD)"
+        build_date="$(date +%Y%m%d)"
         echo "buildSha=${build_sha}" >> $GITHUB_ENV
-        echo "ciTag=ci-${build_sha}-${{ github.run_number }}" >> $GITHUB_ENV
-        echo "commit=$(echo $text | sed 's/\([][\\`.*^$\/+?{}()=!|:-]\)/\\\1/g')" >> $GITHUB_ENV
+        echo "buildDate=${build_date}" >> $GITHUB_ENV
+        echo "zipName=akashaProxy-${build_date}-${build_sha}.zip" >> $GITHUB_ENV
+        echo "ciTag=${build_date}-${build_sha}" >> $GITHUB_ENV
+        echo "commit=$(echo $text | sed 's/\([][\`.*^$\/+?{}()=!|:-]\)/\\1/g')" >> $GITHUB_ENV
 
     - name: Update Submodules
       run: |
@@ -67,23 +70,23 @@ jobs:
       run: |
         make CC=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang
 
+    - name: Rename ZIP
+      run: |
+        mv -f akashaProxy.zip "${{ env.zipName }}"
+        ls -lh "${{ env.zipName }}"
+
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
-        name: akashaProxy.zip
-        path: akashaProxy.zip
+        name: ${{ env.zipName }}
+        path: ${{ env.zipName }}
 
-    - name: Find ZIP
-      run: |
-          cp -Rf akashaProxy.zip akashaProxy-${{ env.buildSha }}.zip
-          echo "ZIP_FILE=$(find . -name 'akashaProxy-${{ env.buildSha }}.zip')" >> $GITHUB_ENV
-  
     - name: Post to Telegram Channel
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
       env:
         CHANNEL_ID: ${{ secrets.TELEGRAM_TO }}
         BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-        FILE: ${{ env.ZIP_FILE }}
+        FILE: ${{ env.zipName }}
         COMMIT_MESSAGE: |+
           **New push to github\!**
 
@@ -96,28 +99,42 @@ jobs:
         ESCAPED=$(python3 -c 'import json,os,urllib.parse; print(urllib.parse.quote(json.dumps(os.environ["COMMIT_MESSAGE"])))')
         curl -v "https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup?chat_id=${CHANNEL_ID}&media=%5B%7B%22type%22:%22document%22,%20%22media%22:%22attach://release%22,%22parse_mode%22:%22MarkdownV2%22,%22caption%22:${ESCAPED}%7D%5D" -F release="@${FILE}"
 
+    # 一次性清理: 只在 commit message 里带 [purge releases] 时执行。
+    # 删除本仓库的全部 release 及其对应 tag (--cleanup-tag), 不会碰没有 release 的 tag。
+    - name: Purge existing releases
+      if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && contains(github.event.head_commit.message, '[purge releases]')
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -u
+        tags="$(gh release list --repo "${{ github.repository }}" --limit 200 --json tagName --jq '.[].tagName')"
+        if [ -z "${tags}" ]; then
+          echo "no release to purge"
+        else
+          echo "${tags}" | while read -r t; do
+            [ -z "${t}" ] && continue
+            echo "deleting release ${t}"
+            gh release delete "${t}" --repo "${{ github.repository }}" --cleanup-tag --yes
+          done
+        fi
+        echo "remaining releases:"
+        gh release list --repo "${{ github.repository }}" --limit 200 || true
+
     - name: Create CI Tag
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
       run: |
         git config --global user.email "actions@github.com"
         git config --global user.name "GitHub Actions"
-        git tag "${{ env.ciTag }}"
-        git push origin "${{ env.ciTag }}"
+        git tag -f "${{ env.ciTag }}"
+        git push -f origin "${{ env.ciTag }}"
 
     - name: Upload release
       if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'  
       uses: softprops/action-gh-release@v1
       with:
           tag_name: ${{ env.ciTag }}
-          name: CI build - ${{ env.ciTag }}
-          body: |
-            **Commit Message:**
-            ```
-            ${{ github.event.head_commit.message }}
-            ```
-            **Author:** @${{ github.actor }}
-            **Commit:** ${{ github.sha }}
-            [View Action Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          files: akashaProxy.zip
+          name: akashaProxy ${{ env.ciTag }}
+          body_path: CHANGELOG.md
+          files: ${{ env.zipName }}
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

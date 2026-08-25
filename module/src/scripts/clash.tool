@@ -275,8 +275,57 @@ update_pre() {
 }
 
 reload() {
-    cp -f ${config_file} ${temporary_config_file}
-    curl -X PUT -H 'Authorization: Bearer ${secret}' -d '{"configs": ["${temporary_config_file}"]}' http://127.0.0.1:${kernel_ui_port}/configs?force=true
+    if [ ! -f "${config_file}" ]; then
+        log "err: 缺少config.yaml 配置文件."
+        return 1
+    fi
+
+    if [ -z "$(busybox pidof ${kernel_bin})" ]; then
+        log "err: ${bin_name}未运行 无法热重载配置."
+        return 1
+    fi
+
+    if ! ${kernel_bin} -d ${data_dir} -f "${config_file}" -t >/dev/null 2>&1; then
+        log "err: 配置文件校验未通过 已放弃重载 请检查config.yaml."
+        ${kernel_bin} -d ${data_dir} -f "${config_file}" -t 2>&1 | tail -3
+        return 1
+    fi
+
+    cp -f "${config_file}" "${temporary_config_file}"
+    chown ${kernel_user_group} "${temporary_config_file}"
+    chmod 0644 "${temporary_config_file}"
+
+    # mihomo 的 PUT /configs 接受 {"path": "..."}, 必须是绝对路径
+    if [ -n "${kernel_ui_secret}" ]; then
+        response=$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
+            -H "Authorization: Bearer ${kernel_ui_secret}" \
+            -H "Content-Type: application/json" \
+            -d "{\"path\": \"${temporary_config_file}\"}" \
+            "http://127.0.0.1:${kernel_ui_port}/configs?force=true")
+    else
+        response=$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
+            -H "Content-Type: application/json" \
+            -d "{\"path\": \"${temporary_config_file}\"}" \
+            "http://127.0.0.1:${kernel_ui_port}/configs?force=true")
+    fi
+
+    case "${response}" in
+        20*)
+            log "info: 配置已热重载."
+            ;;
+        401 | 403)
+            log "err: 热重载被拒绝(${response}) 请检查config.yaml中的secret是否与实际一致."
+            return 1
+            ;;
+        "" | 000)
+            log "err: 无法连接 external-controller(127.0.0.1:${kernel_ui_port}) 热重载失败."
+            return 1
+            ;;
+        *)
+            log "err: 热重载失败 HTTP ${response}."
+            return 1
+            ;;
+    esac
 }
 
 limit() {

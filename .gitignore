@@ -2,3 +2,8 @@ akashaProxy*.zip
 tmp
 node_modules
 .vscode
+
+# 本地维护文档 / 私有资料, 不公开
+AGENTS.md
+MEMORY.md
+需求.txt
